@@ -39,6 +39,9 @@ public enum ConflictAction { KeepExisting, KeepNew }
 public static class Dbpf
 {
     private const ulong MaxDbpfBytes = uint.MaxValue;
+    // The DBPF format accepts nearly 4 GB, but The Sims 3 reliably loads merged
+    // packages only when each output file stays below 2 GB.
+    private const ulong MaxSims3PackageBytes = 2_000_000_000UL;
     private const int BufferSize = 1024 * 1024;
 
     public static bool ResourcesEquivalent(PackageDocument firstDocument, PackageEntry first, PackageDocument secondDocument, PackageEntry second)
@@ -140,7 +143,7 @@ public static class Dbpf
     public static MergeResult MergeAtomically(IReadOnlyList<PackageDocument> documents, string output, IReadOnlyDictionary<int, ConflictAction> choices, IProgress<MergeProgress>? progress = null)
     {
         var kept = ResolveResources(documents, choices, out var conflicts);
-        if (EstimateSize(kept) > MaxDbpfBytes) throw new InvalidDataException("La fusion dépasse 4 Go : crée plusieurs packages.");
+        if (EstimateSize(kept) > MaxSims3PackageBytes) throw new InvalidDataException("La fusion dépasse la limite de 2 Go compatible avec Les Sims 3 : crée plusieurs packages.");
         var totalBytes = PayloadSize(kept);
         ulong copiedBytes = 0;
         ulong lastReported = 0;
@@ -157,7 +160,7 @@ public static class Dbpf
         return new MergeResult(kept.Count, conflicts);
     }
 
-    public static bool RequiresSplit(IReadOnlyList<PackageDocument> documents, IReadOnlyDictionary<int, ConflictAction> choices) => EstimateSize(ResolveResources(documents, choices, out _)) > MaxDbpfBytes;
+    public static bool RequiresSplit(IReadOnlyList<PackageDocument> documents, IReadOnlyDictionary<int, ConflictAction> choices) => EstimateSize(ResolveResources(documents, choices, out _)) > MaxSims3PackageBytes;
 
     public static MergeResult MergeSplitAtomically(IReadOnlyList<PackageDocument> documents, string output, IReadOnlyDictionary<int, ConflictAction> choices, IProgress<MergeProgress>? progress = null)
     {
@@ -168,11 +171,16 @@ public static class Dbpf
         foreach (var resource in kept)
         {
             var candidate = 96UL + 4UL + (ulong)(group.Count + 1) * 32UL + payload + resource.Entry.Size;
-            if (candidate > MaxDbpfBytes && group.Count > 0)
+            if (candidate > MaxSims3PackageBytes && group.Count > 0)
             {
                 groups.Add(group);
                 group = [];
                 payload = 0;
+            }
+
+            if (group.Count == 0 && 96UL + 4UL + 32UL + resource.Entry.Size > MaxSims3PackageBytes)
+            {
+                throw new InvalidDataException("Une ressource dépasse à elle seule la limite de 2 Go compatible avec Les Sims 3 et ne peut pas être divisée.");
             }
             group.Add(resource);
             payload += resource.Entry.Size;

@@ -34,7 +34,7 @@ The original files are never modified.
 - Choose **Keep A**, **Keep B**, **Do nothing**, or **Cancel** for each conflict.
 - Apply **Do nothing** to all following conflicts when needed.
 - Ignore truly identical resources automatically.
-- Split the result into multiple packages when it would exceed the 4 GB DBPF format limit.
+- Split the result into multiple packages when it would exceed the 2 GB limit recommended for The Sims 3.
 - Open, save, and continue projects with `.ts3pf.json` project files.
 - Read large source packages without loading the full file into memory.
 
@@ -51,7 +51,7 @@ Documents/TS3PackageFusion/
 
 ## Notes
 
-- A DBPF package cannot be larger than 4 GB. The app offers to create numbered output packages when necessary.
+- The Sims 3 can become unstable with packages above 2 GB. The app offers to create numbered output packages before reaching that limit.
 - A resource conflict means two packages contain different data with the same DBPF resource key. It does not automatically mean one of the mods is broken.
 - Back up your Mods folder before testing a new merged package in game.
 

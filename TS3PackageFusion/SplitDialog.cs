@@ -27,7 +27,7 @@ public sealed class SplitDialog : Window
             Padding = new Thickness(12),
             Child = new TextBlock
             {
-                Text = "Le package fusionné dépasserait 4 Go, la limite du format DBPF.",
+                Text = "Le package fusionné dépasserait 2 Go, la limite recommandée pour Les Sims 3.",
                 TextWrapping = TextWrapping.Wrap,
                 FontWeight = FontWeight.Bold,
                 Foreground = Brush.Parse("#735500")
