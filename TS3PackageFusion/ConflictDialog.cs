@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Layout;
 using Avalonia.Media;
+using Avalonia.Styling;
 using System.Threading.Tasks;
 
 namespace TS3PackageFusion;
@@ -13,7 +14,8 @@ public sealed class ConflictDialog : Window
     private readonly CheckBox _ignoreAll = new()
     {
         Content = "Ne rien faire pour tous les conflits suivants",
-        IsChecked = true
+        IsChecked = true,
+        Foreground = Brush.Parse("#173A76")
     };
 
     private readonly Border _helpPanel = new()
@@ -30,11 +32,13 @@ public sealed class ConflictDialog : Window
     {
         Title = "Conflit de package";
         Width = 720;
-        Height = 385;
+        Height = 390;
         MinWidth = 620;
         WindowStartupLocation = WindowStartupLocation.CenterOwner;
+        RequestedThemeVariant = ThemeVariant.Light;
+        Background = Brush.Parse("#D8ECFF");
 
-        var panel = new StackPanel { Margin = new Thickness(22), Spacing = 12 };
+        var panel = new StackPanel { Margin = new Thickness(22), Spacing = 12, Background = Brush.Parse("#D8ECFF") };
         var header = new Grid { ColumnDefinitions = new ColumnDefinitions("*,Auto") };
         header.Children.Add(new TextBlock
         {
@@ -49,7 +53,10 @@ public sealed class ConflictDialog : Window
             Width = 30,
             Height = 30,
             Padding = new Thickness(0),
-            FontWeight = FontWeight.Bold
+            FontWeight = FontWeight.Bold,
+            Background = Brush.Parse("#A8D1FF"),
+            Foreground = Brush.Parse("#173A76"),
+            BorderBrush = Brush.Parse("#E2F0FF")
         };
         ToolTip.SetTip(help, "Aide : quel choix utiliser ?");
         help.Click += (_, _) => _helpPanel.IsVisible = !_helpPanel.IsVisible;
@@ -60,7 +67,8 @@ public sealed class ConflictDialog : Window
         panel.Children.Add(new TextBlock
         {
             Text = "Deux packages contiennent une version différente de la même ressource.",
-            TextWrapping = TextWrapping.Wrap
+            TextWrapping = TextWrapping.Wrap,
+            Foreground = Brush.Parse("#173A76")
         });
 
         var files = new Border
@@ -73,7 +81,8 @@ public sealed class ConflictDialog : Window
             Child = new TextBlock
             {
                 Text = $"A - {first}\nB - {second}\n\nRessource : {key}",
-                TextWrapping = TextWrapping.Wrap
+                TextWrapping = TextWrapping.Wrap,
+                Foreground = Brush.Parse("#173A76")
             }
         };
         panel.Children.Add(files);
@@ -106,7 +115,9 @@ public sealed class ConflictDialog : Window
             Content = label,
             Margin = new Thickness(0, 0, 8, 4),
             Padding = new Thickness(12, 8),
-            Background = recommended ? Brush.Parse("#78D9A3") : null,
+            Background = recommended ? Brush.Parse("#78D9A3") : Brush.Parse("#A8D1FF"),
+            BorderBrush = recommended ? Brush.Parse("#D5FFE6") : Brush.Parse("#E2F0FF"),
+            Foreground = recommended ? Brush.Parse("#113D2A") : Brush.Parse("#173A76"),
             FontWeight = recommended ? FontWeight.SemiBold : FontWeight.Normal
         };
         button.Click += (_, _) => Close(new ConflictDecision(action, _ignoreAll.IsChecked == true));
@@ -115,7 +126,15 @@ public sealed class ConflictDialog : Window
 
     private void AddCancelButton(Panel buttons)
     {
-        var button = new Button { Content = "Annuler la fusion", Margin = new Thickness(0, 0, 8, 4), Padding = new Thickness(12, 8) };
+        var button = new Button
+        {
+            Content = "Annuler la fusion",
+            Margin = new Thickness(0, 0, 8, 4),
+            Padding = new Thickness(12, 8),
+            Background = Brush.Parse("#DFE9F7"),
+            BorderBrush = Brush.Parse("#9AB7DA"),
+            Foreground = Brush.Parse("#173A76")
+        };
         button.Click += (_, _) => Close(null);
         buttons.Children.Add(button);
     }
