@@ -1,0 +1,11 @@
+# Build output
+**/bin/
+**/obj/
+release/
+
+# Local research and one-off development utilities
+reference-source/
+s3pem/
+.tools/
+tools/IconExtractor/bin/
+tools/IconExtractor/obj/
