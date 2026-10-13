@@ -13,8 +13,8 @@ Download the latest version from the [Releases page](../../releases/latest).
 | Platform | Download | Installation |
 | --- | --- | --- |
 | Windows 64-bit | `TS3PackageFusion.exe` | Download and run the file. No .NET installation is required. |
-| macOS Apple Silicon | `TS3 Package Fusion.app.zip` | Extract it, then move the app to Applications. |
-| macOS Intel | `TS3 Package Fusion-macos-intel.app.zip` | Extract it, then move the app to Applications. |
+| macOS Apple Silicon | `TS3-Package-Fusion-macos-arm64-<version>.zip` | Extract it, then move the app to Applications. |
+| macOS Intel | `TS3-Package-Fusion-macos-intel-<version>.zip` | Extract it, then move the app to Applications. |
 
 ## How to use
 
@@ -74,9 +74,11 @@ Create a macOS Apple Silicon bundle on a Mac:
 
 ```zsh
 dotnet publish ./TS3PackageFusion/TS3PackageFusion.csproj -c Release -r osx-arm64 --self-contained true -o ./release/TS3PackageFusion-osx-arm64
-zsh ./scripts/new-mac-app.sh ./release/TS3PackageFusion-osx-arm64 ./release
+zsh ./scripts/new-mac-app.sh ./release/TS3PackageFusion-osx-arm64 ./release 1.0.2
 ```
 
 For macOS Intel, replace `osx-arm64` with `osx-x64` in the publish command.
 
 Sign and notarize the macOS app before distributing it publicly.
+
+Until a build is notarized with an Apple Developer ID, macOS may block it on first launch. In that case, open it with a secondary click and select **Open**.

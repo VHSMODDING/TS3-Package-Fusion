@@ -1,13 +1,19 @@
 #!/bin/zsh
 set -euo pipefail
 
-if [[ $# -ne 2 ]]; then
-  print "Usage: $0 <publish-directory> <output-directory>"
+if [[ $# -lt 2 || $# -gt 3 ]]; then
+  print "Usage: $0 <publish-directory> <output-directory> [version]"
   exit 64
 fi
 
 publish_directory="$1"
 output_directory="$2"
+version="${3:-1.0.0}"
+
+if [[ ! "$version" =~ ^[0-9]+(\.[0-9]+){1,3}$ ]]; then
+  print "La version doit être numérique (par exemple 1.0.2)."
+  exit 64
+fi
 app_path="$output_directory/TS3 Package Fusion.app"
 macos_path="$app_path/Contents/MacOS"
 
@@ -20,7 +26,7 @@ mkdir -p "$macos_path" "$app_path/Contents/Resources"
 cp -R "$publish_directory/." "$macos_path/"
 chmod +x "$macos_path/TS3PackageFusion"
 
-cat > "$app_path/Contents/Info.plist" <<'PLIST'
+cat > "$app_path/Contents/Info.plist" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0"><dict>
@@ -30,8 +36,8 @@ cat > "$app_path/Contents/Info.plist" <<'PLIST'
   <key>CFBundleInfoDictionaryVersion</key><string>6.0</string>
   <key>CFBundleName</key><string>TS3 Package Fusion</string>
   <key>CFBundlePackageType</key><string>APPL</string>
-  <key>CFBundleShortVersionString</key><string>1.0.0</string>
-  <key>CFBundleVersion</key><string>1</string>
+  <key>CFBundleShortVersionString</key><string>$version</string>
+  <key>CFBundleVersion</key><string>$version</string>
   <key>LSMinimumSystemVersion</key><string>11.0</string>
   <key>NSHighResolutionCapable</key><true/>
 </dict></plist>

@@ -8,6 +8,7 @@
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationIcon>Assets\Sims3Launcher.ico</ApplicationIcon>
     <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+    <Version>1.0.2</Version>
   </PropertyGroup>
 
   <ItemGroup>
@@ -21,7 +22,6 @@
     </PackageReference>
   </ItemGroup>
   <ItemGroup>
-    <AvaloniaResource Include="A:\Programs\The Sims 3\Game\Bin\HelpPages\Common\images\simsLogo.png" Link="Assets\Sims3Plumbob.png" />
-    <AvaloniaResource Include="A:\Programs\The Sims 3\Game\Bin\StaticPages\Common\bg-default.jpg" Link="Assets\Sims3LauncherBackground.jpg" />
+    <AvaloniaResource Include="..\docs\assets\ts3-package-fusion-icon.png" Link="Assets\Sims3Plumbob.png" />
   </ItemGroup>
 </Project>
