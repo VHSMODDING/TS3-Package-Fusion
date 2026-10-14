@@ -42,7 +42,7 @@ cat > "$app_path/Contents/Info.plist" <<PLIST
   <key>CFBundleExecutable</key><string>TS3PackageFusion</string>
   <key>CFBundleIdentifier</key><string>com.ts3packagefusion.app</string>
   <key>CFBundleInfoDictionaryVersion</key><string>6.0</string>
-  <key>CFBundleIconFile</key><string>TS3PackageFusion</string>
+  <key>CFBundleIconFile</key><string>TS3PackageFusion.icns</string>
   <key>CFBundleName</key><string>TS3 Package Fusion</string>
   <key>CFBundlePackageType</key><string>APPL</string>
   <key>CFBundleShortVersionString</key><string>$version</string>
