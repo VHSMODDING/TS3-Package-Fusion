@@ -22,6 +22,6 @@
     </PackageReference>
   </ItemGroup>
   <ItemGroup>
-    <AvaloniaResource Include="..\docs\assets\ts3-package-fusion-icon.png" Link="Assets\Sims3Plumbob.png" />
+    <AvaloniaResource Include="Assets\Sims3Plumbob.png" />
   </ItemGroup>
 </Project>
