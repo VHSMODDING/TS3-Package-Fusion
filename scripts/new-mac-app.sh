@@ -9,6 +9,8 @@ fi
 publish_directory="$1"
 output_directory="$2"
 version="${3:-1.0.0}"
+script_directory="${0:A:h}"
+icon_path="$script_directory/../TS3PackageFusion/Assets/TS3PackageFusion.icns"
 
 if [[ ! "$version" =~ ^[0-9]+(\.[0-9]+){1,3}$ ]]; then
   print "La version doit être numérique (par exemple 1.0.2)."
@@ -22,8 +24,14 @@ if [[ -e "$app_path" ]]; then
   exit 1
 fi
 
+if [[ ! -f "$icon_path" ]]; then
+  print "Icône macOS introuvable : $icon_path"
+  exit 1
+fi
+
 mkdir -p "$macos_path" "$app_path/Contents/Resources"
 cp -R "$publish_directory/." "$macos_path/"
+cp "$icon_path" "$app_path/Contents/Resources/TS3PackageFusion.icns"
 chmod +x "$macos_path/TS3PackageFusion"
 
 cat > "$app_path/Contents/Info.plist" <<PLIST
@@ -34,6 +42,7 @@ cat > "$app_path/Contents/Info.plist" <<PLIST
   <key>CFBundleExecutable</key><string>TS3PackageFusion</string>
   <key>CFBundleIdentifier</key><string>com.ts3packagefusion.app</string>
   <key>CFBundleInfoDictionaryVersion</key><string>6.0</string>
+  <key>CFBundleIconFile</key><string>TS3PackageFusion</string>
   <key>CFBundleName</key><string>TS3 Package Fusion</string>
   <key>CFBundlePackageType</key><string>APPL</string>
   <key>CFBundleShortVersionString</key><string>$version</string>
