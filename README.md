@@ -19,7 +19,7 @@ Download the latest version from the [Releases page](../../releases/latest).
 ## How to use
 
 1. Open TS3 Package Fusion.
-2. Select **Add packages** and choose the `.package` files to combine.
+2. Drag and drop your `.package` / `.sims3pack` files (or whole folders) into the window — or select **Add packages**. You can also drop them on the app icon (Windows `.exe`, macOS Dock).
 3. Review the conflict notice if one appears.
 4. Select **Merge and save**.
 5. Choose the location and name of the new `.package` file.
@@ -29,25 +29,18 @@ The original files are never modified.
 ## Features
 
 - Combine multiple `.package` files into one package.
-- Import `.sims3pack` files and extract their internal packages directly into the project.
+- Drag and drop files or folders on macOS and Windows.
+- Import `.sims3pack` files and extract their internal packages automatically.
 - Detect resource conflicts before merging.
 - Choose **Keep A**, **Keep B**, **Do nothing**, or **Cancel** for each conflict.
 - Apply **Do nothing** to all following conflicts when needed.
 - Ignore truly identical resources automatically.
 - Split the result into multiple packages when it would exceed the 2 GB limit recommended for The Sims 3.
-- Open, save, and continue projects with `.ts3pf.json` project files.
 - Read large source packages without loading the full file into memory.
 
-## Project folder
+## Standalone
 
-TS3 Package Fusion creates its workspace here:
-
-```text
-Documents/TS3PackageFusion/
-|- Projects/
-|- Extracted Packages/
-`- Merged Packages/
-```
+TS3 Package Fusion does not create any folder in your Documents. Packages extracted from `.sims3pack` files are kept in a temporary folder that is deleted when the app closes.
 
 ## Notes
 
@@ -74,7 +67,7 @@ Create a macOS Apple Silicon bundle on a Mac:
 
 ```zsh
 dotnet publish ./TS3PackageFusion/TS3PackageFusion.csproj -c Release -r osx-arm64 --self-contained true -o ./release/TS3PackageFusion-osx-arm64
-zsh ./scripts/new-mac-app.sh ./release/TS3PackageFusion-osx-arm64 ./release 1.0.2
+zsh ./scripts/new-mac-app.sh ./release/TS3PackageFusion-osx-arm64 ./release 1.1.0
 ```
 
 For macOS Intel, replace `osx-arm64` with `osx-x64` in the publish command.

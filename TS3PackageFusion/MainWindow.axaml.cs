@@ -1,11 +1,10 @@
 using Avalonia.Controls;
+using Avalonia.Input;
 using Avalonia.Platform.Storage;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Security.Cryptography;
-using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace TS3PackageFusion;
@@ -16,11 +15,83 @@ public partial class MainWindow : Window
     private readonly Dictionary<int, bool> _lastConflictChoices = [];
     private List<InitialConflict> _initialConflicts = [];
 
+    // Dossier temporaire (propre à cette session) pour les packages extraits des Sims3Pack.
+    // Il est supprimé à la fermeture : l'application ne crée rien dans Documents.
+    private static readonly string ExtractionRoot = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "TS3PackageFusion", Guid.NewGuid().ToString("N"));
+
     public MainWindow()
     {
-        AppPaths.EnsureCreated();
         InitializeComponent();
-        Status.Text = $"Espace de travail : {AppPaths.Root}";
+        Status.Text = "Glisse-dépose des fichiers .package ou .sims3pack pour commencer.";
+        AddHandler(DragDrop.DragEnterEvent, OnDragOver);
+        AddHandler(DragDrop.DragOverEvent, OnDragOver);
+        AddHandler(DragDrop.DragLeaveEvent, (_, _) => DropOverlay.IsVisible = false);
+        AddHandler(DragDrop.DropEvent, OnDrop);
+        Closed += (_, _) => CleanupExtractedPackages();
+    }
+
+    private void OnDragOver(object? sender, DragEventArgs e)
+    {
+        var accepted = e.DataTransfer.Contains(DataFormat.File);
+        e.DragEffects = accepted ? DragDropEffects.Copy : DragDropEffects.None;
+        DropOverlay.IsVisible = accepted;
+        e.Handled = true;
+    }
+
+    private async void OnDrop(object? sender, DragEventArgs e)
+    {
+        DropOverlay.IsVisible = false;
+        e.Handled = true;
+        var paths = e.DataTransfer.TryGetFiles()?.Select(item => item.TryGetLocalPath()).OfType<string>().ToArray() ?? [];
+        await AddPathsAsync(paths);
+    }
+
+    /// <summary>Ajoute des fichiers .package, .sims3pack ou des dossiers (parcourus récursivement).</summary>
+    public async Task AddPathsAsync(IEnumerable<string> paths)
+    {
+        var files = new List<string>();
+        foreach (var path in paths)
+        {
+            if (Directory.Exists(path))
+            {
+                try { files.AddRange(Directory.EnumerateFiles(path, "*", SearchOption.AllDirectories).Where(IsSupportedFile).OrderBy(f => f, StringComparer.OrdinalIgnoreCase)); }
+                catch (Exception ex) { Status.Text = $"Lecture du dossier impossible : {ex.Message}"; }
+            }
+            else if (File.Exists(path) && IsSupportedFile(path)) files.Add(path);
+        }
+        if (files.Count == 0) { Status.Text = "Aucun fichier .package ou .sims3pack trouvé."; return; }
+
+        var before = _packages.Count;
+        foreach (var file in files)
+        {
+            if (file.EndsWith(".sims3pack", StringComparison.OrdinalIgnoreCase)) await ImportSims3Pack(file);
+            else await AddPackage(file);
+        }
+        Refresh();
+        await UpdateInitialConflictsAsync();
+        Status.Text = $"{_packages.Count - before} package(s) ajouté(s). Total : {_packages.Count} package(s), {_packages.Sum(p => p.Entries.Count):N0} ressources";
+    }
+
+    private static bool IsSupportedFile(string path) =>
+        path.EndsWith(".package", StringComparison.OrdinalIgnoreCase) || path.EndsWith(".sims3pack", StringComparison.OrdinalIgnoreCase);
+
+    private async Task<int> ImportSims3Pack(string path)
+    {
+        var imported = 0;
+        try
+        {
+            Status.Text = $"Extraction de {System.IO.Path.GetFileName(path)}…";
+            var packages = await Task.Run(() => Sims3PackExtractor.ExtractPackages(path, ExtractionRoot));
+            foreach (var package in packages) { await AddPackage(package); imported++; }
+        }
+        catch (Exception ex) { Status.Text = $"Import Sims3Pack impossible : {ex.Message}"; }
+        return imported;
+    }
+
+    private static void CleanupExtractedPackages()
+    {
+        try { if (Directory.Exists(ExtractionRoot)) Directory.Delete(ExtractionRoot, recursive: true); }
+        catch { /* best effort : le système nettoiera le dossier temporaire */ }
     }
 
     private async void AddPackages(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
@@ -58,14 +129,7 @@ public partial class MainWindow : Window
         foreach (var file in files)
         {
             var path = file.TryGetLocalPath();
-            if (path is null) continue;
-            try
-            {
-                Status.Text = $"Extraction de {System.IO.Path.GetFileName(path)}…";
-                var packages = await Task.Run(() => Sims3PackExtractor.ExtractPackages(path, AppPaths.ExtractedPackages));
-                foreach (var package in packages) { await AddPackage(package); imported++; }
-            }
-            catch (Exception ex) { Status.Text = $"Import Sims3Pack impossible : {ex.Message}"; }
+            if (path is not null) imported += await ImportSims3Pack(path);
         }
         Refresh();
         await UpdateInitialConflictsAsync();
@@ -81,57 +145,6 @@ public partial class MainWindow : Window
         }
         Refresh();
         await UpdateInitialConflictsAsync();
-    }
-
-    private async void SaveProject(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
-    {
-        var file = await StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
-        {
-            SuggestedFileName = "MyMerge.ts3pf.json",
-            SuggestedStartLocation = await StorageProvider.TryGetFolderFromPathAsync(AppPaths.Projects),
-            FileTypeChoices = [new FilePickerFileType("Projet TS3 Package Fusion") { Patterns = ["*.ts3pf.json"] }]
-        });
-        var path = file?.TryGetLocalPath();
-        if (path is null) return;
-        var project = new MergeProject
-        {
-            Packages = _packages.Select(p => new ProjectPackage { Path = p.Path, Sha256 = HashFile(p.Path) }).ToList(),
-            ConflictChoices = new Dictionary<int, bool>(_lastConflictChoices)
-        };
-        await File.WriteAllTextAsync(path, JsonSerializer.Serialize(project, new JsonSerializerOptions { WriteIndented = true }));
-        Status.Text = "Projet enregistré.";
-    }
-
-    private async void OpenProject(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
-    {
-        var files = await StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
-        {
-            AllowMultiple = false,
-            SuggestedStartLocation = await StorageProvider.TryGetFolderFromPathAsync(AppPaths.Projects),
-            FileTypeFilter = [new FilePickerFileType("Projet TS3 Package Fusion") { Patterns = ["*.ts3pf.json"] }]
-        });
-        var path = files.FirstOrDefault()?.TryGetLocalPath();
-        if (path is null) return;
-        try
-        {
-            var project = JsonSerializer.Deserialize<MergeProject>(await File.ReadAllTextAsync(path)) ?? throw new InvalidDataException("Projet vide.");
-            if (project.Version != 1) throw new InvalidDataException("Cette version de projet n’est pas prise en charge.");
-            _packages.Clear(); _lastConflictChoices.Clear();
-            foreach (var pair in project.ConflictChoices) _lastConflictChoices[pair.Key] = pair.Value;
-            var changed = 0;
-            foreach (var projectPackage in project.Packages)
-            {
-                if (!File.Exists(projectPackage.Path)) { changed++; continue; }
-                var document = await Task.Run(() => PackageDocument.Read(projectPackage.Path));
-                if (!string.Equals(HashFile(document.Path), projectPackage.Sha256, StringComparison.OrdinalIgnoreCase)) changed++;
-                _packages.Add(document);
-            }
-            if (changed != 0) _lastConflictChoices.Clear();
-            Refresh();
-            await UpdateInitialConflictsAsync();
-            Status.Text = changed == 0 ? "Projet ouvert." : $"Projet ouvert : {changed} fichier(s) manquant(s) ou modifié(s).";
-        }
-        catch (Exception ex) { Status.Text = $"Impossible d’ouvrir le projet : {ex.Message}"; }
     }
 
     private async void MergePackages(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
@@ -160,7 +173,6 @@ public partial class MainWindow : Window
         var target = await StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
         {
             SuggestedFileName = "Merged.package",
-            SuggestedStartLocation = await StorageProvider.TryGetFolderFromPathAsync(AppPaths.MergedPackages),
             FileTypeChoices = [new FilePickerFileType("Package Sims 3") { Patterns = ["*.package"] }]
         });
         var output = target?.TryGetLocalPath();
@@ -247,18 +259,4 @@ public partial class MainWindow : Window
         return unit == 0 ? $"{amount:N0} {units[unit]}" : $"{amount:N1} {units[unit]}";
     }
 
-    private static string HashFile(string path)
-    {
-        using var stream = File.OpenRead(path);
-        return Convert.ToHexString(SHA256.HashData(stream));
-    }
 }
-
-public sealed class MergeProject
-{
-    public int Version { get; set; } = 1;
-    public List<ProjectPackage> Packages { get; set; } = [];
-    public Dictionary<int, bool> ConflictChoices { get; set; } = [];
-}
-
-public sealed class ProjectPackage { public string Path { get; set; } = ""; public string Sha256 { get; set; } = ""; }
