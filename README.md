@@ -74,4 +74,10 @@ For macOS Intel, replace `osx-arm64` with `osx-x64` in the publish command.
 
 Sign and notarize the macOS app before distributing it publicly.
 
-Until a build is notarized with an Apple Developer ID, macOS may block it on first launch. In that case, open it with a secondary click and select **Open**.
+The script signs the bundle (ad hoc by default, or with your certificate via `CODESIGN_IDENTITY="Developer ID Application: …"`).
+
+Until a build is notarized with an Apple Developer ID, macOS blocks it on first launch with "Apple could not verify…". To open it: try to open the app once, then go to **System Settings → Privacy & Security** and select **Open Anyway**. Alternatively, in Terminal:
+
+```zsh
+xattr -dr com.apple.quarantine "/Applications/TS3 Package Fusion.app"
+```

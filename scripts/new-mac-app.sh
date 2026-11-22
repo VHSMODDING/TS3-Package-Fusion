@@ -56,4 +56,33 @@ cat > "$app_path/Contents/Info.plist" <<PLIST
 </dict></plist>
 PLIST
 
+# Signature du bundle complet. Sans cela, la signature ad hoc posée par dotnet publish
+# sur l'exécutable ne couvre pas le bundle et macOS affiche « app endommagée » après téléchargement.
+# Par défaut : signature ad hoc ("-"). Avec un certificat Developer ID :
+#   CODESIGN_IDENTITY="Developer ID Application: Nom (TEAMID)" zsh new-mac-app.sh ...
+identity="${CODESIGN_IDENTITY:--}"
+sign_options=(--force --timestamp=none --sign "$identity")
+if [[ "$identity" != "-" ]]; then
+  entitlements="$(mktemp -t ts3pf-entitlements).plist"
+  cat > "$entitlements" <<ENT
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+  <key>com.apple.security.cs.allow-jit</key><true/>
+  <key>com.apple.security.cs.allow-unsigned-executable-memory</key><true/>
+  <key>com.apple.security.cs.disable-library-validation</key><true/>
+</dict></plist>
+ENT
+  sign_options=(--force --timestamp --options runtime --entitlements "$entitlements" --sign "$identity")
+fi
+
+xattr -cr "$app_path"
+# Tous les fichiers de Contents/MacOS (dylib, dll, json…) sont vus comme du code par macOS :
+# chacun doit être signé, sauf l'exécutable principal qui est signé avec le bundle.
+find "$macos_path" -type f ! -path "$macos_path/TS3PackageFusion" -print0 | while IFS= read -r -d '' file; do
+  codesign "${sign_options[@]}" "$file" 2>/dev/null
+done
+codesign "${sign_options[@]}" "$app_path"
+codesign --verify --deep --strict "$app_path"
+
 print "$app_path"
