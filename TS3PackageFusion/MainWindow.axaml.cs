@@ -22,7 +22,6 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
-        Status.Text = "Glisse-dépose des fichiers .package ou .sims3pack pour commencer.";
         AddHandler(DragDrop.DragEnterEvent, OnDragOver);
         AddHandler(DragDrop.DragOverEvent, OnDragOver);
         AddHandler(DragDrop.DragLeaveEvent, (_, _) => DropOverlay.IsVisible = false);
