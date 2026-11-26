@@ -28,7 +28,11 @@ public sealed class PackageDocument
     public byte[] Data { get; init; } = [];
     public List<PackageEntry> Entries { get; init; } = [];
     public string Name => System.IO.Path.GetFileName(Path);
-    public override string ToString() => $"{Name} - {Entries.Count:N0} ressources";
+    /// <summary>Remarque affichée dans la liste, par exemple « ancienne version de … ».</summary>
+    public string? Note { get; set; }
+    public override string ToString() => Note is null
+        ? $"{Name} - {Entries.Count:N0} ressources"
+        : $"{Name} - {Entries.Count:N0} ressources  —  {Note}";
     public static PackageDocument Read(string path) => Dbpf.Read(path);
 }
 

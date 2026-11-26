@@ -14,6 +14,9 @@ public partial class MainWindow : Window
     private readonly List<PackageDocument> _packages = [];
     private readonly Dictionary<int, bool> _lastConflictChoices = [];
     private List<InitialConflict> _initialConflicts = [];
+    private List<PackageUpdate> _updates = [];
+    // paires déjà soumises à l'utilisateur : le dialogue ne se rouvre pas tout seul pour les mêmes
+    private readonly HashSet<string> _answeredUpdates = [];
 
     // Dossier temporaire (propre à cette session) pour les packages extraits des Sims3Pack.
     // Il est supprimé à la fermeture : l'application ne crée rien dans Documents.
@@ -68,6 +71,7 @@ public partial class MainWindow : Window
         }
         Refresh();
         await UpdateInitialConflictsAsync();
+        await RefreshUpdatesAsync(offerToRemove: true);
         Status.Text = $"{_packages.Count - before} package(s) ajouté(s). Total : {_packages.Count} package(s), {_packages.Sum(p => p.Entries.Count):N0} ressources";
     }
 
@@ -103,6 +107,7 @@ public partial class MainWindow : Window
         foreach (var file in files) await AddPackage(file.TryGetLocalPath());
         Refresh();
         await UpdateInitialConflictsAsync();
+        await RefreshUpdatesAsync(offerToRemove: true);
     }
 
     private async Task AddPackage(string? path)
@@ -132,6 +137,7 @@ public partial class MainWindow : Window
         }
         Refresh();
         await UpdateInitialConflictsAsync();
+        await RefreshUpdatesAsync(offerToRemove: true);
         if (imported > 0) Status.Text = $"{imported} package(s) extrait(s) et ajouté(s).";
     }
 
@@ -144,6 +150,7 @@ public partial class MainWindow : Window
         }
         Refresh();
         await UpdateInitialConflictsAsync();
+        await RefreshUpdatesAsync(offerToRemove: false);
     }
 
     private async void MergePackages(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
@@ -233,6 +240,52 @@ public partial class MainWindow : Window
             .OrderBy(conflict => conflict.Key.Type).ThenBy(conflict => conflict.Key.Group).ThenBy(conflict => conflict.Key.High).ThenBy(conflict => conflict.Key.Low)
             .ToList();
     }
+
+    /// <summary>Cherche les packages qui semblent être d'anciennes versions, les signale, et propose de les retirer.</summary>
+    private async Task RefreshUpdatesAsync(bool offerToRemove)
+    {
+        var snapshot = _packages.ToArray();
+        _updates = await Task.Run(() => UpdateDetector.Find(snapshot));
+        foreach (var package in _packages) package.Note = null;
+        foreach (var update in _updates) update.Older.Note = $"ancienne version de {update.Newer.Name}";
+        Refresh();
+
+        UpdateNotice.IsVisible = _updates.Count > 0;
+        if (_updates.Count > 0)
+        {
+            var sure = _updates.Count(update => update.Confidence == UpdateConfidence.Confident);
+            UpdateNoticeText.Text = _updates.Count == 1
+                ? "🔄 1 package ressemble à une version plus ancienne d’un autre. Cliquer pour choisir."
+                : $"🔄 {_updates.Count:N0} packages ressemblent à des versions plus anciennes ({sure:N0} sans ambiguïté). Cliquer pour choisir.";
+        }
+
+        var fresh = _updates.Where(update => !_answeredUpdates.Contains(Pair(update))).ToList();
+        if (offerToRemove && fresh.Any(update => update.Confidence == UpdateConfidence.Confident)) await AskAboutUpdatesAsync();
+    }
+
+    private static string Pair(PackageUpdate update) => $"{update.Older.Path}\u0000{update.Newer.Path}";
+
+    private async Task AskAboutUpdatesAsync()
+    {
+        if (_updates.Count == 0) return;
+        var shown = _updates;
+        var toRemove = await UpdatesDialog.Show(this, shown,
+            update => update.Confidence == UpdateConfidence.Confident && !_answeredUpdates.Contains(Pair(update)));
+        foreach (var update in shown) _answeredUpdates.Add(Pair(update));
+        if (toRemove.Count == 0)
+        {
+            Status.Text = $"{shown.Count} mise(s) à jour signalée(s), aucun package retiré.";
+            return;
+        }
+        foreach (var update in toRemove) _packages.Remove(update.Older);
+        _lastConflictChoices.Clear();
+        Refresh();
+        await UpdateInitialConflictsAsync();
+        await RefreshUpdatesAsync(offerToRemove: false);
+        Status.Text = $"{toRemove.Count} ancienne(s) version(s) retirée(s). Total : {_packages.Count} package(s), {_packages.Sum(p => p.Entries.Count):N0} ressources";
+    }
+
+    private async void ShowUpdates(object? sender, Avalonia.Interactivity.RoutedEventArgs e) => await AskAboutUpdatesAsync();
 
     private async void ShowInitialConflicts(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {

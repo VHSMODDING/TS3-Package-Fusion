@@ -18,11 +18,12 @@
       </Grid>
     </Border>
     <Border Grid.Column="2" Background="#D8ECFF" BorderBrush="#91C4FA" BorderThickness="2" CornerRadius="8" Padding="12">
-      <Grid RowDefinitions="Auto,Auto,*,Auto">
+      <Grid RowDefinitions="Auto,Auto,Auto,*,Auto">
         <Border Background="#405F9F" CornerRadius="5" Padding="11"><Grid ColumnDefinitions="*,Auto"><StackPanel><TextBlock Text="PACKAGES À FUSIONNER" Foreground="#BEE2FF" FontSize="12" FontWeight="Bold"/><TextBlock Text="Choisis les fichiers à fusionner" Foreground="White" FontSize="19" FontWeight="SemiBold"/></StackPanel><Image Grid.Column="1" Source="avares://TS3PackageFusion/Assets/Sims3Plumbob.png" Width="42" Height="42" Stretch="Uniform"/></Grid></Border>
-        <Border Name="ConflictNotice" Grid.Row="1" IsVisible="False" Background="#FFF3C5" BorderBrush="#D69E23" BorderThickness="1" Padding="8" Margin="0,10,0,8" CornerRadius="4"><Button HorizontalAlignment="Left" Click="ShowInitialConflicts" Background="Transparent" BorderThickness="0" Padding="0"><TextBlock Name="ConflictNoticeText" Foreground="#735500" TextWrapping="Wrap"/></Button></Border>
-        <ListBox Name="PackageList" Grid.Row="2"/>
-        <StackPanel Grid.Row="3" Margin="0,10,0,0" Spacing="6">
+        <Border Name="UpdateNotice" Grid.Row="1" IsVisible="False" Background="#D6F5E2" BorderBrush="#3E9E6C" BorderThickness="1" Padding="8" Margin="0,10,0,0" CornerRadius="4"><Button HorizontalAlignment="Left" Click="ShowUpdates" Background="Transparent" BorderThickness="0" Padding="0"><TextBlock Name="UpdateNoticeText" Foreground="#1B5B3C" TextWrapping="Wrap"/></Button></Border>
+        <Border Name="ConflictNotice" Grid.Row="2" IsVisible="False" Background="#FFF3C5" BorderBrush="#D69E23" BorderThickness="1" Padding="8" Margin="0,10,0,8" CornerRadius="4"><Button HorizontalAlignment="Left" Click="ShowInitialConflicts" Background="Transparent" BorderThickness="0" Padding="0"><TextBlock Name="ConflictNoticeText" Foreground="#735500" TextWrapping="Wrap"/></Button></Border>
+        <ListBox Name="PackageList" Grid.Row="3"/>
+        <StackPanel Grid.Row="4" Margin="0,10,0,0" Spacing="6">
           <StackPanel Name="MergeProgressArea" IsVisible="False" Spacing="3">
             <Grid ColumnDefinitions="*,Auto"><TextBlock Name="MergeProgressText" Foreground="#24487A" Text="Fusion en préparation..."/><TextBlock Name="MergeProgressPercent" Grid.Column="1" Foreground="#24487A" FontWeight="SemiBold"/></Grid>
             <ProgressBar Name="MergeProgressBar" Minimum="0" Maximum="100" Height="10"/>
